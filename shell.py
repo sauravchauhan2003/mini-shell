@@ -1,5 +1,6 @@
 import os
 import sys
+from run_child import run_child
 curr_dir=os.getcwd()
 prev_dir=None
 while True:
@@ -48,6 +49,9 @@ while True:
                     print(f"cd: {path}: Permission denied")
                 except OSError as e:
                     print(f"cd: {path}: {e}")
+    else:
+        sys.stdout.flush()
+        run_child(arr)
 
 
     
