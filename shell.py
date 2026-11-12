@@ -1,6 +1,7 @@
 import os
 import sys
 from run_child import run_child
+import shlex
 curr_dir=os.getcwd()
 prev_dir=None
 while True:
@@ -14,7 +15,11 @@ while True:
         continue
     if(command=="exit"):
         sys.exit()
-    arr = command.split()
+    try:
+        arr = shlex.split(command)
+    except ValueError as e:
+        print(f"syntax error: {e}")
+    continue
     if not arr:
         continue
     if arr[0]=="cd":
