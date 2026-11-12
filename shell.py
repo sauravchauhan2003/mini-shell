@@ -3,13 +3,19 @@ import sys
 curr_dir=os.getcwd()
 prev_dir=None
 while True:
-    print(curr_dir+">")
-    command=str(input())
+    try:
+        command = input(curr_dir + "> ")
+    except EOFError:
+        print()
+        sys.exit(0)
+    except KeyboardInterrupt:
+        print()
+        continue
     if(command=="exit"):
         sys.exit()
-    if command=="":
+    arr = command.split()
+    if not arr:
         continue
-    arr=command.split()
     if arr[0]=="cd":
         if(len(arr)!=2):
             print("Incorrect cd command")
@@ -33,7 +39,7 @@ while True:
                     path=arr[1]
                     os.chdir(path)
                     prev_dir=curr_dir
-                    curr_dir=path
+                    curr_dir=os.getcwd()
                 except FileNotFoundError:
                     print(f"cd: {path}: No such file or directory")
                 except NotADirectoryError:
