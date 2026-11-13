@@ -1,7 +1,47 @@
 import os
 import sys
-from run_child import run_child
+from run_child import spawn
 import shlex
+
+def pipecommand(arr):
+    n = len(arr)
+    l = []
+    for x in arr:
+        curr = list(x)
+        curr += [None, None, None]      # stdin_fd, stdout_fd, close_fds
+        l.append(curr)
+    all_fds = []
+    i = 0
+    while i < n - 1:
+        r, w = os.pipe()
+        l[i][5] = w                     # command i writes into the pipe
+        l[i + 1][4] = r                 # command i+1 reads from it
+        all_fds.extend((r, w))
+        i += 1
+    for k in range(n):
+        l[k][6] = all_fds               # every child closes every pipe fd
+        l[k] = tuple(l[k])
+    return l, all_fds
+    
+    
+
+
+def split_pipeline(arr):
+    ans=[]
+    curr=[]
+    for x in arr:
+        if x=='|':
+            if len(curr)==0:
+                return None
+            ans.append(curr)
+            curr=[]
+        else:
+            curr.append(x)
+    if len(curr)==0:
+        return None
+    ans.append(curr)
+    return ans;
+
 
 
 def parseInput(arr):
@@ -40,7 +80,9 @@ while True:
         print()
         continue
     try:
-        arr = shlex.split(command)
+        lex = shlex.shlex(command, posix=True, punctuation_chars=True)
+        lex.whitespace_split = True
+        arr = list(lex)
     except ValueError as e:
         print(f"syntax error: {e}")
         continue
@@ -81,18 +123,35 @@ while True:
                 except OSError as e:
                     print(f"cd: {path}: {e}")
     else:
-        result = parseInput(arr)
-        if result is None:
-            print("syntax error: missing filename after redirection")
+        segments=split_pipeline(arr)
+        if segments is None:
+            print("Synatax error:Wrong use of pipe operator")
             continue
-        args, infile, outfile, append = result
-        if not args:
-            print("syntax error: missing command")
+        jobs=[]
+        for segment in segments:
+            curr=parseInput(segment)
+            if curr is None:
+                jobs=None
+                break
+            args, infile, outfile, append=curr
+            if args is None:
+                jobs=None
+                break
+            jobs.append(curr)
+        if jobs is None:
+            print("Syntax error in command")
             continue
         sys.stdout.flush()
-        status = run_child(args, infile, outfile, append)
+        specs, all_fds = pipecommand(jobs)
+        pids = []
+        for args, infile, outfile, append, stdin_fd, stdout_fd, close_fds in specs:
+            pids.append(spawn(args, infile, outfile, append, stdin_fd, stdout_fd, close_fds))
 
+        for fd in all_fds:                      # the shell closes its copies too
+            os.close(fd)
 
-
-
-    
+        last_status = None
+        for pid in pids:
+            _, status = os.waitpid(pid, 0)
+            if pid == pids[-1]:
+                last_status = status
