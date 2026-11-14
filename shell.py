@@ -125,7 +125,7 @@ while True:
     else:
         segments=split_pipeline(arr)
         if segments is None:
-            print("Synatax error:Wrong use of pipe operator")
+            print("Syntax error:Wrong use of pipe operator")
             continue
         jobs=[]
         for segment in segments:
@@ -134,7 +134,7 @@ while True:
                 jobs=None
                 break
             args, infile, outfile, append=curr
-            if args is None:
+            if not args:
                 jobs=None
                 break
             jobs.append(curr)
