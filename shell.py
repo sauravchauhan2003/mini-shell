@@ -2,7 +2,7 @@ import os
 import sys
 from run_child import spawn
 import shlex
-
+import signal
 def pipecommand(arr):
     n = len(arr)
     l = []
@@ -144,6 +144,7 @@ while True:
         sys.stdout.flush()
         specs, all_fds = pipecommand(jobs)
         pids = []
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
         for args, infile, outfile, append, stdin_fd, stdout_fd, close_fds in specs:
             pids.append(spawn(args, infile, outfile, append, stdin_fd, stdout_fd, close_fds))
 
@@ -155,3 +156,4 @@ while True:
             _, status = os.waitpid(pid, 0)
             if pid == pids[-1]:
                 last_status = status
+        signal.signal(signal.SIGINT, signal.default_int_handler)

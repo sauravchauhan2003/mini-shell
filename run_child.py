@@ -1,12 +1,13 @@
 import os
 import sys
-
+import signal
 def spawn(args, infile=None, outfile=None, append=False,stdin_fd=None, stdout_fd=None, close_fds=()):
     sys.stdout.flush()
     pid = os.fork()
     if pid != 0:
         return pid                      # parent: just hand back the pid
-
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
     try:
         # 1. pipe wiring
         if stdin_fd is not None:
@@ -43,4 +44,5 @@ def spawn(args, infile=None, outfile=None, append=False,stdin_fd=None, stdout_fd
             print(f"{args[0]}: {e.strerror}", file=sys.stderr, flush=True)
             os._exit(127)
     finally:
-        os._exit(127)                   # the child can never return to the shell loop
+        os._exit(127) 
+                      # the child can never return to the shell loop
